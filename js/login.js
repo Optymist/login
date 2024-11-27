@@ -45,9 +45,46 @@ document.addEventListener('DOMContentLoaded', () => {
     toggleRegisterRepeatPassword.addEventListener('click', () => toggleVisibility(registerRepeatPasswordField, toggleRegisterRepeatPassword));
 });
 
+function showError(field, message) {
+    const errorElement = document.getElementById(`${field}-error`);
+    const inputElement = document.getElementById(field);
+
+    if (errorElement) {
+        errorElement.textContent = message;
+        errorElement.style.display = 'block';
+    }
+
+    if (inputElement) {
+        inputElement.classList.add('error');
+    }
+}
+
+function resetErrors() {
+    const errorMessages = document.querySelectorAll('.error-message');
+    const inputFields = document.querySelectorAll(`.input-box input`);
+
+    errorMessages.forEach((message) => {
+        message.textContent = '';
+        message.style.display = 'none';
+    });
+
+    inputFields.forEach((field) => {
+        field.classList.remove('error');
+    });
+}
+
+// function showLoginForm() {
+//     const formContainer = document.querySelector('.form-container');
+//     formContainer.classList.remove('active');
+// }
+
+
 document.querySelector('.formbox.login form').addEventListener('submit', async (e) => {
     e.preventDefault();
+    resetErrors();
+
     const email = document.getElementById('email').value.trim();
+    localStorage.setItem('email', email);
     const password = document.getElementById('password').value.trim();
 
     try {
@@ -58,27 +95,37 @@ document.querySelector('.formbox.login form').addEventListener('submit', async (
         });
 
         const result = await response.json();
-        alert(result.message);
+        if (response.ok) {
+            const username = result.username;
+            window.location.href = `/success.html?username=${encodeURIComponent(username)}`;
+        } else {
+            showError('general', result.message)
+        }
     } catch (error) {
+        showError('general', error);
         console.log("Error:", error);
-        alert("An error occurred");
+        // alert("An error occurred");
     }
 });
 
 document.querySelector('.formbox.register form').addEventListener('submit', async (e) => {
     e.preventDefault();
+    resetErrors();
+
     const form = document.querySelector('.formbox.register form');
     const username = form.querySelector("#username").value.trim()
     const email = form.querySelector("#email").value.trim();
     const password = form.querySelector("#password").value;
     const repeatPassword = form.querySelector("#repeat-password").value;
 
-    console.log(password);
-    console.log(repeatPassword);
-
+    if (password.length < 8) {
+        showError('password', 'Password must be at least 8 characters.');
+        return;
+    }
     if (password !== repeatPassword) {
         e.preventDefault();
-        alert("Passwords do not match. Please check again.");
+        showError("password", "Passwords do not match.");
+        showError("repeat-password", "Passwords do not match.");
         return;
     }
 
@@ -90,9 +137,21 @@ document.querySelector('.formbox.register form').addEventListener('submit', asyn
         });
 
         const result = await response.json();
-        alert(result.message);
+        console.log(response);
+        console.log(result);
+        // console.log
+        // alert(result.message);
+        if (response.status === 201) {
+            // window.location.href('/login.html')
+            // showLoginForm();
+            document.querySelector('.form-container').classList.remove('active');
+        } else {
+            showError('general-register', 'Error occurred. You may already have an account with this email.');
+            return;
+        }
     } catch (error) {
         console.log("Error:", error);
         alert("An error occurred");
     }
 });
+
